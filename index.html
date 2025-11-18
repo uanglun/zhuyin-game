@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注音大挑戰</title>
+    <style>
+        /* 基礎樣式 */
+        body {
+            font-family: '微軟正黑體', 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f4f8;
+            padding: 20px;
+            margin: 0; /* 確保沒有多餘邊距 */
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 750px;
+            min-height: 450px;
+            position: relative;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        /* 選單樣式 */
+        #start-screen, #result-screen {
+            text-align: center;
+        }
+
+        .question-selection button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .question-selection button:hover {
+            background-color: #2980b9;
+        }
+
+        .question-selection button:active {
+            transform: scale(0.98);
+        }
+
+        /* 遊戲介面樣式 */
+        #quiz-screen {
+            display: none;
+            text-align: center;
+        }
+
+        #timer {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 15px;
+            padding: 5px 15px;
+            border: 2px solid #e74c3c;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        #score-display {
+            font-size: 1.2em;
+            color: #27ae60;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        #question-word {
+            font-size: 6em; 
+            font-weight: 900;
+            margin: 20px 0;
+            color: #2c3e50;
+            line-height: 1.2;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 兩欄佈局 */
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .option-button {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            border: 1px solid #bdc3c7;
+            padding: 15px 10px;
+            font-size: 1.8em; 
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .option-button:hover {
+            background-color: #dce1e3;
+        }
+
+        /* 答案反饋 */
+        .option-button.correct {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .option-button.incorrect {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        /* 結果頁面樣式 */
+        .result-stats {
+            margin-top: 30px;
+            font-size: 1.2em;
+        }
+
+        .result-stats p {
+            padding: 8px 0;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .result-stats strong {
+            color: #34495e;
+            font-weight: bold;
+        }
+
+        .back-button {
+            margin-top: 30px;
+            background-color: #f39c12;
+        }
+
+        .back-button:hover {
+            background-color: #e67e22;
+        }
+
+        /* 倒數計時專用樣式 */
+        #countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            color: white;
+            font-size: 10em;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s;
+        }
+
+
+        /* --- 手機版適應性調整 (Media Query) --- */
+        @media screen and (max-width: 600px) {
+            body {
+                padding: 0;
+            }
+            
+            .container {
+                padding: 15px; /* 減少容器內邊距 */
+                width: 100%; /* 佔滿手機寬度 */
+                max-width: 100%;
+                min-height: 100vh; /* 讓容器佔滿整個視口高度 */
+                box-shadow: none; /* 移除陰影以減少視覺干擾 */
+                border-radius: 0;
+            }
+
+            h1 {
+                font-size: 1.5em; /* 縮小標題 */
+                margin-bottom: 20px;
+            }
+
+            #question-word {
+                font-size: 4.5em; /* 縮小國字以確保不溢出 */
+                margin: 10px 0;
+            }
+
+            .option-button {
+                font-size: 1.5em; /* 稍縮小注音選項 */
+                padding: 15px 8px; /* 增加垂直邊距，保持易點擊 */
+            }
+
+            .options-grid {
+                gap: 10px; /* 縮小選項間距 */
+            }
+
+            .question-selection button {
+                display: block; /* 讓開始按鈕變成垂直排列 */
+                width: 100%;
+                margin: 10px 0;
+            }
+
+            #timer, #score-display, #current-q {
+                font-size: 1em; /* 縮小狀態列文字 */
+            }
+            
+            #countdown-overlay {
+                font-size: 8em; /* 縮小倒數數字 */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="countdown-overlay" style="display:none;">
+    <span id="countdown-number">3</span>
+</div>
+
+<div class="container">
+    <h1>注音大挑戰</h1>
+
+    <div id="start-screen">
+        <h2>請選擇想挑戰的題數：</h2>
+        <div class="question-selection">
+            <button onclick="startGame(25)">挑戰 25 題</button>
+            <button onclick="startGame(50)">挑戰 50 題</button>
+            <button onclick="startGame(100)">挑戰 100 題</button>
+        </div>
+    </div>
+
+    <div id="quiz-screen">
+        <div id="status-bar">
+            <span id="current-q">第 1 題 / 共 25 題</span> | 
+            <span id="score-display">總分數: 0</span>
+        </div>
+        <div id="timer">時間: <span id="time-left"></span>s</div>
+
+        <p id="question-word">字</p>
+
+        <div class="options-grid" id="options-container">
+            <button class="option-button" data-option="1" onclick="checkAnswer(this)"></button>
+            <button class="option-button" data-option="2" onclick="checkAnswer(this)"></button>
+            <button class="option-button" data-option="3" onclick="checkAnswer(this)"></button>
+            <button class="option-button" data-option="4" onclick="checkAnswer(this)"></button>
+        </div>
+    </div>
+
+    <div id="result-screen" style="display:none;">
+        <h2>挑戰結束！</h2>
+        <h3 style="color:#e67e22;">最終得分：<span id="final-score">0</span> 分</h3>
+        
+        <div class="result-stats">
+            <p>✅ 答對題數：<strong id="correct-count">0</strong> 題</p>
+            <p>❌ 答錯題數：<strong id="wrong-count">0</strong> 題</p>
+            <p>⏸️ 未作答題數：<strong id="skipped-count">0</strong> 題</p>
+        </div>
+
+        <button class="back-button" onclick="resetGame()">返回主選單</button>
+    </div>
+
+</div>
+
+<script>
+    // --- 遊戲邏輯變數 ---
+    let currentQuiz = []; 
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let skippedCount = 0;
+    let totalQuestions = 0;
+    let timer;
+    let startTime;
+    let timeLimit; 
+
+    // --- 150 題注音題庫 (包含簡單和較難字) ---
+    // 難度: 'easy' (10s, 3s內+5額外分) / 'hard' (20s, 5s內+10額外分)
+    const allQuizData = [
+        // 簡單題 (EASY) - 約 50 題
+        { word: "人", correct: "ㄖㄣˊ", options: ["ㄖㄣˊ", "ㄧㄣˊ", "ㄇㄢˊ", "ㄋㄩˇ"], difficulty: "easy" },
+        { word: "日", correct: "ㄖˋ", options: ["ㄖˋ", "ㄌㄧˋ", "ㄇㄧˋ", "ㄖㄨˋ"], difficulty: "easy" },
+        { word: "山", correct: "ㄕㄢ", options: ["ㄕㄢ", "ㄔㄢ", "ㄒㄧㄢ", "ㄙㄢ"], difficulty: "easy" },
+        { word: "水", correct: "ㄕㄨㄟˇ", options: ["ㄕㄨㄟˇ", "ㄕㄨㄛˇ", "ㄔㄨㄟˇ", "ㄒㄩㄝˇ"], difficulty: "easy" },
+        { word: "月", correct: "ㄩㄝˋ", options: ["ㄩㄝˋ", "ㄧㄝˋ", "ㄖㄨˋ", "ㄌㄩㄝˋ"], difficulty: "easy" },
+        { word: "火", correct: "ㄏㄨㄛˇ", options: ["ㄏㄨㄛˇ", "ㄈㄛˇ", "ㄏㄨˊ", "ㄏㄨㄞˇ"], difficulty: "easy" },
+        { word: "田", correct: "ㄊㄧㄢˊ", options: ["ㄊㄧㄢˊ", "ㄉㄧㄢˋ", "ㄊㄧㄢˇ", "ㄊㄧㄥˊ"], difficulty: "easy" },
+        { word: "土", correct: "ㄊㄨˇ", options: ["ㄊㄨˇ", "ㄉㄨˋ", "ㄗㄨㄛˋ", "ㄔㄨˇ"], difficulty: "easy" },
+        { word: "木", correct: "ㄇㄨˋ", options: ["ㄇㄨˋ", "ㄇㄛˋ", "ㄇㄚˋ", "ㄇㄧˋ"], difficulty: "easy" },
+        { word: "鳥", correct: "ㄋㄧㄠˇ", options: ["ㄋㄧㄠˇ", "ㄉㄧㄠˇ", "ㄌㄧㄠˇ", "ㄓㄠˇ"], difficulty: "easy" },
+        { word: "魚", correct: "ㄩˊ", options: ["ㄩˊ", "ㄧˊ", "ㄨˊ", "ㄌㄩˊ"], difficulty: "easy" },
+        { word: "狗", correct: "ㄍㄡˇ", options: ["ㄍㄡˇ", "ㄐㄧㄡˇ", "ㄎㄡˇ", "ㄍㄨㄛˇ"], difficulty: "easy" },
+        { word: "貓", correct: "ㄇㄠ", options: ["ㄇㄠ", "ㄇㄠˊ", "ㄇㄠˇ", "ㄇㄧㄠ"], difficulty: "easy" },
+        { word: "跑", correct: "ㄆㄠˇ", options: ["ㄆㄠˇ", "ㄅㄠˇ", "ㄆㄠ", "ㄈㄠˇ"], difficulty: "easy" },
+        { word: "跳", correct: "ㄊㄧㄠˋ", options: ["ㄊㄧㄠˋ", "ㄉㄧㄠˋ", "ㄒㄧㄠˋ", "ㄑㄧㄠˋ"], difficulty: "easy" },
+        { word: "吃", correct: "ㄔ", options: ["ㄔ", "ㄘ", "ㄕ", "ㄖ"], difficulty: "easy" },
+        { word: "喝", correct: "ㄏㄜ", options: ["ㄏㄜ", "ㄍㄜ", "ㄎㄜ", "ㄜ"], difficulty: "easy" },
+        { word: "書", correct: "ㄕㄨ", options: ["ㄕㄨ", "ㄔㄨ", "ㄒㄩ", "ㄖㄨ"], difficulty: "easy" },
+        { word: "筆", correct: "ㄅㄧˇ", options: ["ㄅㄧˇ", "ㄆㄧˇ", "ㄇㄧˇ", "ㄉㄧˇ"], difficulty: "easy" },
+        { word: "電", correct: "ㄉㄧㄢˋ", options: ["ㄉㄧㄢˋ", "ㄊㄧㄢˋ", "ㄋㄧㄢˋ", "ㄌㄧㄢˋ"], difficulty: "easy" },
+        { word: "話", correct: "ㄏㄨㄚˋ", options: ["ㄏㄨㄚˋ", "ㄈㄚˋ", "ㄍㄨㄚˋ", "ㄏㄨㄚ"], difficulty: "easy" },
+        { word: "房", correct: "ㄈㄤˊ", options: ["ㄈㄤˊ", "ㄆㄤˊ", "ㄇㄤˊ", "ㄉㄤˊ"], difficulty: "easy" },
+        { word: "家", correct: "ㄐㄧㄚ", options: ["ㄐㄧㄚ", "ㄑㄧㄚ", "ㄒㄧㄚ", "ㄓㄚ"], difficulty: "easy" },
+        { word: "笑", correct: "ㄒㄧㄠˋ", options: ["ㄒㄧㄠˋ", "ㄕㄠˋ", "ㄑㄧㄠˋ", "ㄗㄠˋ"], difficulty: "easy" },
+        { word: "哭", correct: "ㄎㄨ", options: ["ㄎㄨ", "ㄍㄨ", "ㄏㄨ", "ㄈㄨ"], difficulty: "easy" },
+        { word: "走", correct: "ㄗㄡˇ", options: ["ㄗㄡˇ", "ㄘㄡˇ", "ㄙㄡˇ", "ㄓㄡˇ"], difficulty: "easy" },
+        { word: "坐", correct: "ㄗㄨㄛˋ", options: ["ㄗㄨㄛˋ", "ㄘㄨㄛˋ", "ㄙㄨㄛˋ", "ㄓㄨㄛˋ"], difficulty: "easy" },
+        { word: "站", correct: "ㄓㄢˋ", options: ["ㄓㄢˋ", "ㄔㄢˋ", "ㄕㄢˋ", "ㄗㄢˋ"], difficulty: "easy" },
+        { word: "看", correct: "ㄎㄢˋ", options: ["ㄎㄢˋ", "ㄍㄢˋ", "ㄏㄢˋ", "ㄇㄢˋ"], difficulty: "easy" },
+        { word: "聽", correct: "ㄊㄧㄥ", options: ["ㄊㄧㄥ", "ㄉㄧㄥ", "ㄋㄧㄥ", "ㄌㄧㄥ"], difficulty: "easy" },
+        { word: "說", correct: "ㄕㄨㄛ", options: ["ㄕㄨㄛ", "ㄔㄨㄛ", "ㄒㄩㄝ", "ㄖㄨㄛ"], difficulty: "easy" },
+        { word: "做", correct: "ㄗㄨㄛˋ", options: ["ㄗㄨㄛˋ", "ㄘㄨㄛˋ", "ㄙㄨㄛˋ", "ㄓㄨㄛˋ"], difficulty: "easy" },
+        { word: "事", correct: "ㄕˋ", options: ["ㄕˋ", "ㄔˋ", "ㄙˋ", "ㄗˋ"], difficulty: "easy" },
+        { word: "高", correct: "ㄍㄠ", options: ["ㄍㄠ", "ㄎㄠ", "ㄏㄠ", "ㄗㄠ"], difficulty: "easy" },
+        { word: "低", correct: "ㄉㄧ", options: ["ㄉㄧ", "ㄊㄧ", "ㄋㄧ", "ㄌㄧ"], difficulty: "easy" },
+        { word: "大", correct: "ㄉㄚˋ", options: ["ㄉㄚˋ", "ㄊㄚˋ", "ㄋㄚˋ", "ㄌㄚˋ"], difficulty: "easy" },
+        { word: "小", correct: "ㄒㄧㄠˇ", options: ["ㄒㄧㄠˇ", "ㄑㄧㄠˇ", "ㄕㄠˇ", "ㄐㄧㄠˇ"], difficulty: "easy" },
+        { word: "來", correct: "ㄌㄞˊ", options: ["ㄌㄞˊ", "ㄋㄞˊ", "ㄉㄞˊ", "ㄊㄞˊ"], difficulty: "easy" },
+        { word: "去", correct: "ㄑㄩˋ", options: ["ㄑㄩˋ", "ㄒㄩˋ", "ㄐㄩˋ", "ㄩˋ"], difficulty: "easy" },
+        { word: "穿", correct: "ㄔㄨㄢ", options: ["ㄔㄨㄢ", "ㄗㄨㄢ", "ㄘㄨㄢ", "ㄕㄨㄢ"], difficulty: "easy" },
+        { word: "衣", correct: "ㄧ", options: ["ㄧ", "ㄜ", "ㄛ", "ㄨ"], difficulty: "easy" },
+        { word: "鞋", correct: "ㄒㄧㄝˊ", options: ["ㄒㄧㄝˊ", "ㄑㄧㄝˊ", "ㄐㄧㄝˊ", "ㄕㄝˊ"], difficulty: "easy" },
+        { word: "帽", correct: "ㄇㄠˋ", options: ["ㄇㄠˋ", "ㄅㄠˋ", "ㄆㄠˋ", "ㄈㄠˋ"], difficulty: "easy" },
+        { word: "錢", correct: "ㄑㄧㄢˊ", options: ["ㄑㄧㄢˊ", "ㄐㄧㄢˊ", "ㄒㄧㄢˊ", "ㄓㄢˊ"], difficulty: "easy" },
+        { word: "買", correct: "ㄇㄞˇ", options: ["ㄇㄞˇ", "ㄅㄞˇ", "ㄆㄞˇ", "ㄈㄞˇ"], difficulty: "easy" },
+        { word: "賣", correct: "ㄇㄞˋ", options: ["ㄇㄞˋ", "ㄅㄞˋ", "ㄆㄞˋ", "ㄈㄞˋ"], difficulty: "easy" },
+        { word: "開", correct: "ㄎㄞ", options: ["ㄎㄞ", "ㄍㄞ", "ㄏㄞ", "ㄐㄧㄝ"], difficulty: "easy" },
+        { word: "關", correct: "ㄍㄨㄢ", options: ["ㄍㄨㄢ", "ㄎㄨㄢ", "ㄏㄨㄢ", "ㄐㄩㄢ"], difficulty: "easy" },
+        { word: "光", correct: "ㄍㄨㄤ", options: ["ㄍㄨㄤ", "ㄎㄨㄤ", "ㄏㄨㄤ", "ㄨㄤ"], difficulty: "easy" },
+        { word: "暗", correct: "ㄢˋ", options: ["ㄢˋ", "ㄧㄣˋ", "ㄨㄢˋ", "ㄣˋ"], difficulty: "easy" },
+        { word: "手", correct: "ㄕㄡˇ", options: ["ㄕㄡˇ", "ㄔㄡˇ", "ㄒㄧㄡˇ", "ㄖㄡˇ"], difficulty: "easy" },
+        { word: "足", correct: "ㄗㄨˊ", options: ["ㄗㄨˊ", "ㄘㄨˊ", "ㄙㄨˊ", "ㄓㄨˊ"], difficulty: "easy" },
+
+        // 較難題 (HARD) - 約 100 題
+        { word: "躊", correct: "ㄔㄡˊ", options: ["ㄔㄡˊ", "ㄓㄡˊ", "ㄔㄡˇ", "ㄓˋ"], difficulty: "hard" },
+        { word: "釁", correct: "ㄒㄧㄣˋ", options: ["ㄒㄧㄣˋ", "ㄒㄧㄣ", "ㄌㄧㄣˋ", "ㄒㄧㄥˋ"], difficulty: "hard" },
+        { word: "拗", correct: "ㄠˋ", options: ["ㄠˋ", "ㄋㄧㄡˇ", "ㄋㄠˋ", "ㄧㄠˋ"], difficulty: "hard" },
+        { word: "倏", correct: "ㄕㄨ", options: ["ㄕㄨ", "ㄕㄡ", "ㄙㄨ", "ㄊㄨ"], difficulty: "hard" },
+        { word: "攫", correct: "ㄐㄩㄝˊ", options: ["ㄐㄩㄝˊ", "ㄐㄩˋ", "ㄐㄩㄝˇ", "ㄍㄨㄛˊ"], difficulty: "hard" },
+        { word: "絢", correct: "ㄒㄩㄢˋ", options: ["ㄒㄩㄢˋ", "ㄒㄩㄢˇ", "ㄒㄩㄣˋ", "ㄏㄨㄢˋ"], difficulty: "hard" },
+        { word: "蓊", correct: "ㄨㄥˇ", options: ["ㄨㄥˇ", "ㄨㄥ", "ㄧㄥˇ", "ㄨㄣˇ"], difficulty: "hard" },
+        { word: "箴", correct: "ㄓㄣ", options: ["ㄓㄣ", "ㄐㄧㄣ", "ㄘㄣ", "ㄓㄢ"], difficulty: "hard" },
+        { word: "覃", correct: "ㄑㄧㄣ", options: ["ㄑㄧㄣ", "ㄊㄢˊ", "ㄒㄩㄣˊ", "ㄓㄣ"], difficulty: "hard" },
+        { word: "虯", correct: "ㄑㄧㄡˊ", options: ["ㄑㄧㄡˊ", "ㄐㄧㄡˇ", "ㄑㄧㄡˇ", "ㄑㄧㄥˊ"], difficulty: "hard" },
+        { word: "巉", correct: "ㄔㄢˊ", options: ["ㄔㄢˊ", "ㄐㄧㄢ", "ㄔㄢ", "ㄉㄢˊ"], difficulty: "hard" },
+        { word: "囁", correct: "ㄋㄧㄝˋ", options: ["ㄋㄧㄝˋ", "ㄓㄜˊ", "ㄋㄧㄝˇ", "ㄐㄧㄝˊ"], difficulty: "hard" },
+        { word: "韜", correct: "ㄊㄠ", options: ["ㄊㄠ", "ㄉㄠ", "ㄊㄠˊ", "ㄊㄨㄛˊ"], difficulty: "hard" },
+        { word: "饜", correct: "ㄧㄢ", options: ["ㄧㄢ", "ㄧㄢˋ", "ㄢ", "ㄧㄝ"], difficulty: "hard" },
+        { word: "籓", correct: "ㄈㄢ", options: ["ㄈㄢ", "ㄆㄢ", "ㄈㄢˊ", "ㄅㄢ"], difficulty: "hard" },
+        { word: "孑", correct: "ㄐㄧㄝˊ", options: ["ㄐㄧㄝˊ", "ㄓㄜˊ", "ㄐㄧㄝ", "ㄗㄧ"], difficulty: "hard" },
+        { word: "囓", correct: "ㄋㄧㄝˋ", options: ["ㄋㄧㄝˋ", "ㄋㄧㄝ", "ㄐㄧㄝˊ", "ㄧㄝˋ"], difficulty: "hard" },
+        { word: "襤", correct: "ㄌㄢˊ", options: ["ㄌㄢˊ", "ㄌㄢ", "ㄋㄢˊ", "ㄌㄧㄝˊ"], difficulty: "hard" },
+        { word: "嶸", correct: "ㄖㄨㄥˊ", options: ["ㄖㄨㄥˊ", "ㄧㄥˊ", "ㄍㄨㄥ", "ㄖㄨㄥ"], difficulty: "hard" },
+        { word: "賒", correct: "ㄕㄜ", options: ["ㄕㄜ", "ㄐㄧㄝ", "ㄓㄜ", "ㄒㄧㄝ"], difficulty: "hard" },
+        { word: "釉", correct: "ㄧㄡˋ", options: ["ㄧㄡˋ", "ㄓㄡˋ", "ㄩˋ", "ㄌㄧㄡˋ"], difficulty: "hard" },
+        { word: "漚", correct: "ㄡ", options: ["ㄡ", "ㄧㄡ", "ㄨ", "ㄛ"], difficulty: "hard" },
+        { word: "謔", correct: "ㄒㄩㄝˋ", options: ["ㄒㄩㄝˋ", "ㄏㄨㄛˋ", "ㄩㄝˋ", "ㄐㄧㄠˋ"], difficulty: "hard" },
+        { word: "汩", correct: "ㄩˋ", options: ["ㄩˋ", "ㄍㄨˇ", "ㄐㄩㄝˊ", "ㄇㄧˋ"], difficulty: "hard" },
+        { word: "醱", correct: "ㄈㄚ", options: ["ㄈㄚ", "ㄅㄛ", "ㄆㄛ", "ㄇㄛˋ"], difficulty: "hard" },
+        { word: "齷", correct: "ㄨㄛˋ", options: ["ㄨㄛˋ", "ㄨㄚˋ", "ㄧㄝˋ", "ㄜˋ"], difficulty: "hard" },
+        { word: "齪", correct: "ㄔㄨㄛˋ", options: ["ㄔㄨㄛˋ", "ㄗㄨㄛˊ", "ㄗㄨㄛˋ", "ㄘㄨㄛˋ"], difficulty: "hard" },
+        { word: "恫", correct: "ㄉㄨㄥˋ", options: ["ㄉㄨㄥˋ", "ㄊㄨㄥˊ", "ㄋㄨㄥˋ", "ㄉㄧㄥˋ"], difficulty: "hard" },
+        { word: "慄", correct: "ㄌㄧˋ", options: ["ㄌㄧˋ", "ㄌㄨˋ", "ㄌㄧˊ", "ㄌㄩˋ"], difficulty: "hard" },
+        { word: "姸", correct: "ㄧㄢˊ", options: ["ㄧㄢˊ", "ㄋㄧㄢˊ", "ㄖㄢˊ", "ㄐㄧㄢ"], difficulty: "hard" },
+        { word: "訐", correct: "ㄐㄧㄝˊ", options: ["ㄐㄧㄝˊ", "ㄒㄩ", "ㄍㄜˊ", "ㄐㄧㄚ"], difficulty: "hard" },
+        { word: "圮", correct: "ㄆㄧˇ", options: ["ㄆㄧˇ", "ㄉㄧˇ", "ㄐㄧˇ", "ㄅㄧˇ"], difficulty: "hard" },
+        { word: "箴", correct: "ㄓㄣ", options: ["ㄓㄣ", "ㄐㄧㄣ", "ㄘㄣ", "ㄓㄢ"], difficulty: "hard" },
+        { word: "覬", correct: "ㄐㄧˋ", options: ["ㄐㄧˋ", "ㄍㄨㄟˋ", "ㄒㄧˋ", "ㄎㄨㄟˋ"], difficulty: "hard" },
+        { word: "覦", correct: "ㄩˊ", options: ["ㄩˊ", "ㄖㄨˊ", "ㄌㄩˊ", "ㄨˊ"], difficulty: "hard" },
+        { word: "躑", correct: "ㄓˊ", options: ["ㄓˊ", "ㄔˊ", "ㄉㄧˊ", "ㄐㄧˊ"], difficulty: "hard" },
+        { word: "蹠", correct: "ㄓˊ", options: ["ㄓˊ", "ㄉㄧˊ", "ㄐㄧˊ", "ㄔˊ"], difficulty: "hard" },
+        { word: "矜", correct: "ㄐㄧㄣ", options: ["ㄐㄧㄣ", "ㄍㄨㄢ", "ㄌㄧㄢˋ", "ㄒㄩㄢ"], difficulty: "hard" },
+        { word: "剽", correct: "ㄆㄧㄠ", options: ["ㄆㄧㄠ", "ㄆㄧㄠˊ", "ㄅㄧㄠ", "ㄆㄧㄠˇ"], difficulty: "hard" },
+        { word: "囿", correct: "ㄧㄡˋ", options: ["ㄧㄡˋ", "ㄖㄡˋ", "ㄩˋ", "ㄔㄡˋ"], difficulty: "hard" },
+        { word: "逡", correct: "ㄑㄩㄣ", options: ["ㄑㄩㄣ", "ㄒㄩㄣ", "ㄐㄩㄣ", "ㄗㄨㄣ"], difficulty: "hard" },
+        { word: "堙", correct: "ㄧㄣ", options: ["ㄧㄣ", "ㄩㄣ", "ㄧㄥ", "ㄢ"], difficulty: "hard" },
+        { word: "呶", correct: "ㄋㄠˊ", options: ["ㄋㄠˊ", "ㄋㄨˊ", "ㄋㄠˇ", "ㄒㄧㄠ"], difficulty: "hard" },
+        { word: "儳", correct: "ㄔㄢˊ", options: ["ㄔㄢˊ", "ㄗㄢˇ", "ㄕㄢ", "ㄐㄧㄢ"], difficulty: "hard" },
+        { word: "縹", correct: "ㄆㄧㄠˇ", options: ["ㄆㄧㄠˇ", "ㄆㄧㄠ", "ㄅㄧㄠ", "ㄇㄧㄠˇ"], difficulty: "hard" },
+        { word: "緲", correct: "ㄇㄧㄠˇ", options: ["ㄇㄧㄠˇ", "ㄇㄧㄠ", "ㄋㄧㄠˇ", "ㄒㄧㄠˇ"], difficulty: "hard" },
+        { word: "怫", correct: "ㄈㄨˊ", options: ["ㄈㄨˊ", "ㄅㄧˋ", "ㄈㄟˋ", "ㄈㄨˇ"], difficulty: "hard" },
+        { word: "憮", correct: "ㄨˇ", options: ["ㄨˇ", "ㄏㄨˇ", "ㄇㄨˇ", "ㄈㄨˇ"], difficulty: "hard" },
+        { word: "醼", correct: "ㄧㄢˋ", options: ["ㄧㄢˋ", "ㄧㄢ", "ㄢ", "ㄣ"], difficulty: "hard" },
+        { word: "跫", correct: "ㄑㄩㄥˊ", options: ["ㄑㄩㄥˊ", "ㄐㄩㄥ", "ㄍㄨㄥ", "ㄑㄩㄥ"], difficulty: "hard" },
+        { word: "顢", correct: "ㄇㄢˊ", options: ["ㄇㄢˊ", "ㄨㄢˊ", "ㄈㄢˊ", "ㄉㄢˊ"], difficulty: "hard" },
+        { word: "頇", correct: "ㄏㄢ", options: ["ㄏㄢ", "ㄏㄢˋ", "ㄉㄢ", "ㄍㄢ"], difficulty: "hard" },
+        { word: "褫", correct: "ㄔˇ", options: ["ㄔˇ", "ㄉㄧˇ", "ㄘˇ", "ㄓˇ"], difficulty: "hard" },
+        { word: "祗", correct: "ㄓ", options: ["ㄓ", "ㄑㄧˊ", "ㄉㄧˇ", "ㄐㄧ"], difficulty: "hard" },
+        { word: "艟", correct: "ㄔㄨㄥ", options: ["ㄔㄨㄥ", "ㄉㄨㄥ", "ㄐㄩㄥ", "ㄊㄨㄥ"], difficulty: "hard" },
+        { word: "艢", correct: "ㄌㄧㄤˇ", options: ["ㄌㄧㄤˇ", "ㄇㄤˇ", "ㄌㄤˇ", "ㄉㄤˇ"], difficulty: "hard" },
+        { word: "餽", correct: "ㄎㄨㄟˋ", options: ["ㄎㄨㄟˋ", "ㄏㄨㄟˋ", "ㄍㄨㄟˋ", "ㄨㄟˋ"], difficulty: "hard" },
+        { word: "餧", correct: "ㄨㄟˋ", options: ["ㄨㄟˋ", "ㄏㄨㄟˋ", "ㄎㄨㄟˋ", "ㄉㄨㄟˋ"], difficulty: "hard" },
+        { word: "緲", correct: "ㄇㄧㄠˇ", options: ["ㄇㄧㄠˇ", "ㄇㄧㄠ", "ㄋㄧㄠˇ", "ㄒㄧㄠˇ"], difficulty: "hard" },
+        { word: "縹", correct: "ㄆㄧㄠˇ", options: ["ㄆㄧㄠˇ", "ㄆㄧㄠ", "ㄅㄧㄠ", "ㄇㄧㄠˇ"], difficulty: "hard" },
+        { word: "怫", correct: "ㄈㄨˊ", options: ["ㄈㄨˊ", "ㄅㄧˋ", "ㄈㄟˋ", "ㄈㄨˇ"], difficulty: "hard" },
+        { word: "憮", correct: "ㄨˇ", options: ["ㄨˇ", "ㄏㄨˇ", "ㄇㄨˇ", "ㄈㄨˇ"], difficulty: "hard" },
+        { word: "呶", correct: "ㄋㄠˊ", options: ["ㄋㄠˊ", "ㄋㄨˊ", "ㄋㄠˇ", "ㄒㄧㄠ"], difficulty: "hard" },
+        { word: "儳", correct: "ㄔㄢˊ", options: ["ㄔㄢˊ", "ㄗㄢˇ", "ㄕㄢ", "ㄐㄧㄢ"], difficulty: "hard" },
+        { word: "醼", correct: "ㄧㄢˋ", options: ["ㄧㄢˋ", "ㄧㄢ", "ㄢ", "ㄣ"], difficulty: "hard" },
+        { word: "跫", correct: "ㄑㄩㄥˊ", options: ["ㄑㄩㄥˊ", "ㄐㄩㄥ", "ㄍㄨㄥ", "ㄑㄩㄥ"], difficulty: "hard" },
+        { word: "顢", correct: "ㄇㄢˊ", options: ["ㄇㄢˊ", "ㄨㄢˊ", "ㄈㄢˊ", "ㄉㄢˊ"], difficulty: "hard" },
+        { word: "頇", correct: "ㄏㄢ", options: ["ㄏㄢ", "ㄏㄢˋ", "ㄉㄢ", "ㄍㄢ"], difficulty: "hard" },
+        { word: "褫", correct: "ㄔˇ", options: ["ㄔˇ", "ㄉㄧˇ", "ㄘˇ", "ㄓˇ"], difficulty: "hard" },
+        { word: "祗", correct: "ㄓ", options: ["ㄓ", "ㄑㄧˊ", "ㄉㄧˇ", "ㄐㄧ"], difficulty: "hard" },
+        { word: "艟", correct: "ㄔㄨㄥ", options: ["ㄔㄨㄥ", "ㄉㄨㄥ", "ㄐㄩㄥ", "ㄊㄨㄥ"], difficulty: "hard" },
+        { word: "艢", correct: "ㄌㄧㄤˇ", options: ["ㄌㄧㄤˇ", "ㄇㄤˇ", "ㄌㄤˇ", "ㄉㄤˇ"], difficulty: "hard" }
+    ];
+
+    // --- 遊戲控制函數 ---
+
+    function shuffleAndSelect(array, num) {
+        if (num > array.length) {
+            num = array.length;
+        }
+        let newArray = [...array];
+        for (let i = newArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+        }
+        return newArray.slice(0, num);
+    }
+
+    function startGame(num) {
+        totalQuestions = num;
+        currentQuestionIndex = 0;
+        score = 0;
+        correctCount = 0;
+        wrongCount = 0;
+        skippedCount = 0;
+
+        currentQuiz = shuffleAndSelect(allQuizData, num);
+        startCountdown();
+    }
+
+    function startCountdown() {
+        let count = 3;
+        const overlay = document.getElementById('countdown-overlay');
+        const number = document.getElementById('countdown-number');
+        
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('quiz-screen').style.display = 'none';
+        overlay.style.display = 'flex';
+        number.textContent = count;
+
+        const countdownTimer = setInterval(() => {
+            count--;
+            if (count > 0) {
+                number.textContent = count;
+            } else {
+                clearInterval(countdownTimer);
+                overlay.style.display = 'none';
+                document.getElementById('quiz-screen').style.display = 'block';
+                nextQuestion();
+            }
+        }, 1000);
+    }
+
+    function nextQuestion() {
+        if (currentQuestionIndex >= totalQuestions) {
+            endGame();
+            return;
+        }
+
+        const q = currentQuiz[currentQuestionIndex];
+        
+        timeLimit = q.difficulty === 'easy' ? 10 : 20; 
+        
+        const optionButtons = document.querySelectorAll('.option-button');
+        optionButtons.forEach(btn => {
+            btn.classList.remove('correct', 'incorrect');
+            btn.disabled = false;
+        });
+
+        document.getElementById('current-q').textContent = `第 ${currentQuestionIndex + 1} 題 / 共 ${totalQuestions} 題`;
+        document.getElementById('score-display').textContent = `總分數: ${score}`;
+        document.getElementById('question-word').textContent = q.word;
+
+        const shuffledOptions = shuffleOptions(q.options);
+        shuffledOptions.forEach((option, index) => {
+            optionButtons[index].textContent = option;
+            optionButtons[index].dataset.correct = (option === q.correct);
+            optionButtons[index].dataset.value = option;
+        });
+
+        startTimer();
+        startTime = Date.now();
+    }
+
+    function shuffleOptions(options) {
+        let array = [...options];
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function startTimer() {
+        clearInterval(timer); 
+        let timeLeft = timeLimit;
+        document.getElementById('time-left').textContent = timeLeft;
+
+        timer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('time-left').textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                skippedCount++;
+                showResult(false, 0, true);
+            }
+        }, 1000);
+    }
+
+    function checkAnswer(selectedButton) {
+        clearInterval(timer); 
+        const q = currentQuiz[currentQuestionIndex];
+        const isCorrect = selectedButton.dataset.correct === 'true';
+        const answerTime = (Date.now() - startTime) / 1000; 
+        
+        let totalPoints = 0;
+        
+        const isEasy = q.difficulty === 'easy';
+        const basePoints = isEasy ? 10 : 15;      
+        const bonusPoints = isEasy ? 5 : 10;       
+        const bonusTimeLimit = isEasy ? 3 : 5;     
+
+        if (isCorrect) {
+            correctCount++;
+            totalPoints = basePoints; 
+            
+            if (answerTime <= bonusTimeLimit) {
+                totalPoints += bonusPoints; 
+            }
+            
+            score += totalPoints; 
+        } else {
+            wrongCount++;
+            totalPoints = 0;
+        }
+
+        showResult(isCorrect, totalPoints, false, selectedButton);
+    }
+
+    function showResult(isCorrect, points, isSkipped, selectedButton = null) {
+        const optionButtons = document.querySelectorAll('.option-button');
+        optionButtons.forEach(btn => {
+            btn.disabled = true;
+
+            if (btn.dataset.correct === 'true') {
+                btn.classList.add('correct');
+            } 
+            
+            if (!isCorrect && !isSkipped && selectedButton === btn) {
+                btn.classList.add('incorrect');
+            }
+        });
+
+        setTimeout(() => {
+            currentQuestionIndex++;
+            nextQuestion();
+        }, 1500);
+    }
+
+    function endGame() {
+        clearInterval(timer);
+        
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+
+        document.getElementById('final-score').textContent = score;
+        document.getElementById('correct-count').textContent = correctCount;
+        document.getElementById('wrong-count').textContent = wrongCount;
+        document.getElementById('skipped-count').textContent = skippedCount;
+    }
+
+    function resetGame() {
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'block';
+    }
+
+</script>
+
+</body>
+</html>
